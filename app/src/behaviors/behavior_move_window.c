@@ -21,6 +21,7 @@
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 static bool is_enabled = false;
+static bool lgui_active = false;
 
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
@@ -37,7 +38,10 @@ static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
             LOG_DBG("move_window direction keycode 0x%02X pressed", binding->param1);
             if (is_enabled) {
                 LOG_DBG("move_window moving window...");
-                raise_zmk_keycode_state_changed_from_encoded(LGUI, true, event.timestamp);
+                if (!lgui_active) {
+                    raise_zmk_keycode_state_changed_from_encoded(LGUI, true, event.timestamp);
+                    lgui_active = true;
+                }
                 raise_zmk_keycode_state_changed_from_encoded(binding->param1, true, event.timestamp);
             }
         } break;
@@ -51,7 +55,10 @@ static int on_keymap_binding_released(struct zmk_behavior_binding *binding,
     switch (binding->param1) {
         case MWND_ENABLE: {
             LOG_DBG("move_window ENABLE released");
-            raise_zmk_keycode_state_changed_from_encoded(LGUI, false, event.timestamp);
+            if (lgui_active) {
+                raise_zmk_keycode_state_changed_from_encoded(LGUI, false, event.timestamp);
+                lgui_active = false;
+            }
             is_enabled = false;
         } break;
 
